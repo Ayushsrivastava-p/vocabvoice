@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VocabVoice — Voice Vocabulary Coach</title>
+<style>
+:root{
+  --bg:#f6f7fb;--card:#fff;--text:#172033;--muted:#667085;--primary:#5b5bd6;
+  --primary2:#7c3aed;--border:#e7e9f2;--success:#16a34a;--danger:#dc2626;
+  --shadow:0 12px 35px rgba(31,41,55,.08);--radius:20px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(135deg,#f8f9ff,#eef1ff);color:var(--text)}
+button,input{font:inherit}
+button{cursor:pointer}
+.app{max-width:1100px;margin:auto;padding:24px}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;font-size:22px;font-weight:800}
+h1{font-size:22px;margin:0}.tag{font-size:12px;color:var(--muted);margin-top:2px}
+.header-actions{display:flex;gap:10px}
+.icon-btn,.secondary{border:1px solid var(--border);background:#fff;color:var(--text);padding:10px 14px;border-radius:12px}
+.icon-btn:hover,.secondary:hover{background:#f8f9fc}
+.hero{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:30px;margin-bottom:18px}
+.topline{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+.badge{display:inline-flex;padding:6px 10px;border-radius:999px;background:#eeeefe;color:var(--primary);font-size:12px;font-weight:700}
+.word{font-size:52px;line-height:1.05;margin:14px 0 6px;letter-spacing:-1px}
+.phonetic{color:var(--muted);font-size:16px}
+.definition{font-size:19px;line-height:1.5;margin:20px 0 8px;max-width:760px}
+.example{color:var(--muted);line-height:1.6;max-width:760px}
+.listen{border:0;border-radius:14px;padding:13px 18px;background:#f0efff;color:var(--primary);font-weight:700}
+.listen:hover{background:#e7e5ff}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.primary{border:0;border-radius:14px;padding:13px 20px;background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;font-weight:750;box-shadow:0 8px 18px rgba(91,91,214,.22)}
+.primary:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+.filterbar{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0}
+.filter{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 14px;color:var(--muted)}
+.filter.active{background:#171a2b;color:#fff;border-color:#171a2b}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:#fff;border:1px solid var(--border);border-radius:18px;padding:20px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 8px}.stat{font-size:28px;font-weight:800}.muted{color:var(--muted);font-size:13px}
+.progress-wrap{margin-top:16px}.progress{height:9px;border-radius:99px;background:#eceef5;overflow:hidden}.progress>div{height:100%;background:linear-gradient(90deg,var(--primary),var(--primary2));width:0%;transition:.3s}
+.challenge{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.notice{display:none;margin-bottom:18px;padding:14px 16px;border-radius:14px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+.modal.show{display:flex}.modal-box{width:min(520px,100%);background:#fff;border-radius:20px;padding:24px;box-shadow:0 20px 70px rgba(0,0,0,.2)}
+.modal-head{display:flex;justify-content:space-between;align-items:center}.modal-head h2{margin:0}
+.close{border:0;background:#f1f2f6;border-radius:10px;width:36px;height:36px}
+.result{padding:16px;border-radius:14px;background:#f7f8fc;margin-top:14px;display:none}
+.result.good{background:#ecfdf3;color:#166534;display:block}.result.bad{background:#fef2f2;color:#991b1b;display:block}
+.sentence{font-size:18px;font-weight:650;line-height:1.5;margin:16px 0}
+.input-row{display:flex;gap:8px}.input-row input{flex:1;border:1px solid var(--border);border-radius:12px;padding:12px 14px;outline:none}.input-row input:focus{border-color:var(--primary)}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:24px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.word{font-size:42px}.topline{flex-direction:column}.challenge{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">
+    <div class="logo">V</div>
+    <div><h1>VocabVoice</h1><div class="tag">Your voice-powered vocabulary coach</div></div>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" id="progressBtn">Progress</button>
+    <button class="icon-btn" id="settingsBtn">Settings</button>
+  </div>
+</header>
+
+<div class="notice" id="supportNotice"></div>
+
+<section class="hero">
+  <div class="topline">
+    <div>
+      <span class="badge" id="difficultyBadge">Medium</span>
+      <div class="word" id="word">Resilient</div>
+      <div class="phonetic" id="phonetic">/rɪˈzɪliənt/</div>
+    </div>
+    <button class="listen" id="listenBtn">🔊 Listen</button>
+  </div>
+  <div class="definition" id="definition"></div>
+  <div class="example" id="example"></div>
+  <div class="controls">
+    <button class="primary" id="practiceWordBtn">🎙 Practice pronunciation</button>
+    <button class="secondary" id="practiceSentenceBtn">💬 Practice in a sentence</button>
+    <button class="secondary" id="nextBtn">Next word →</button>
+  </div>
+  <div class="progress-wrap">
+    <div class="muted"><span id="progressLabel">0 / 12 learned</span></div>
+    <div class="progress"><div id="progressBar"></div></div>
+  </div>
+</section>
+
+<div class="filterbar">
+  <button class="filter active" data-filter="all">All</button>
+  <button class="filter" data-filter="easy">Easy</button>
+  <button class="filter" data-filter="medium">Medium</button>
+  <button class="filter" data-filter="hard">Hard</button>
+  <button class="filter" data-filter="random">🎲 Lucky word</button>
+</div>
+
+<section class="grid">
+  <div class="card"><div class="muted">Words learned</div><div class="stat" id="learnedStat">0</div></div>
+  <div class="card"><div class="muted">Practice accuracy</div><div class="stat" id="accuracyStat">0%</div></div>
+  <div class="card"><div class="muted">Current streak</div><div class="stat" id="streakStat">0 🔥</div></div>
+</section>
+
+<section class="card" style="margin-top:16px">
+  <div class="challenge">
+    <div>
+      <div class="muted">Daily challenge</div>
+      <h3 style="margin:6px 0">Master today's word</h3>
+      <div class="muted" id="challengeText">Practice the featured word using your voice.</div>
+    </div>
+    <button class="primary" id="challengeBtn">Start challenge</button>
+  </div>
+</section>
+
+<footer>Works with your browser's built-in speech recognition and text-to-speech. No account or paid API required.</footer>
+</div>
+
+<div class="modal" id="practiceModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2 id="modalTitle">Practice</h2><button class="close" data-close="practiceModal">×</button></div>
+    <p class="muted" id="modalInstruction"></p>
+    <div class="sentence" id="sentencePrompt"></div>
+    <button class="primary" id="speakBtn">🎙 Start speaking</button>
+    <button class="secondary" id="modalListenBtn" style="margin-left:6px">🔊 Listen</button>
+    <div class="result" id="resultBox"></div>
+    <div class="input-row" style="margin-top:14px">
+      <input id="fallbackInput" placeholder="If voice isn't available, type what you said">
+      <button class="secondary" id="checkTypedBtn">Check</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="progressModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>Your progress</h2><button class="close" data-close="progressModal">×</button></div>
+    <div id="progressDetails" style="margin-top:16px"></div>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>Settings</h2><button class="close" data-close="settingsModal">×</button></div>
+    <p class="muted">Your progress is stored only in this browser.</p>
+    <button class="secondary" id="resetBtn">Reset all progress</button>
+  </div>
+</div>
+
+<script>
+const WORDS = [
+ {word:"Resilient",phonetic:"/rɪˈzɪliənt/",difficulty:"medium",definition:"Able to recover quickly from difficulties or setbacks.",example:"She stayed resilient after the project faced several unexpected problems."},
+ {word:"Meticulous",phonetic:"/məˈtɪkjələs/",difficulty:"hard",definition:"Very careful and precise about every detail.",example:"He is meticulous when reviewing product requirements."},
+ {word:"Empathy",phonetic:"/ˈempəθi/",difficulty:"easy",definition:"The ability to understand and share another person's feelings.",example:"Good product managers use empathy to understand users."},
+ {word:"Adaptable",phonetic:"/əˈdæptəbəl/",difficulty:"easy",definition:"Able to adjust effectively to new conditions.",example:"An adaptable team can respond quickly to changing customer needs."},
+ {word:"Ambiguous",phonetic:"/æmˈbɪɡjuəs/",difficulty:"medium",definition:"Open to more than one possible meaning or interpretation.",example:"The requirement was ambiguous, so the team asked for clarification."},
+ {word:"Innovative",phonetic:"/ˈɪnəveɪtɪv/",difficulty:"medium",definition:"Introducing new ideas, methods, or products.",example:"The company launched an innovative way to simplify onboarding."},
+ {word:"Concise",phonetic:"/kənˈsaɪs/",difficulty:"easy",definition:"Giving information clearly and in few words.",example:"Keep the executive summary concise and focused."},
+ {word:"Persuasive",phonetic:"/pərˈsweɪsɪv/",difficulty:"medium",definition:"Good at convincing someone to believe or do something.",example:"Her presentation was persuasive because it combined data with customer stories."},
+ {word:"Pragmatic",phonetic:"/præɡˈmætɪk/",difficulty:"hard",definition:"Focused on practical solutions rather than theory.",example:"The team took a pragmatic approach and launched the smallest useful version."},
+ {word:"Curious",phonetic:"/ˈkjʊəriəs/",difficulty:"easy",definition:"Eager to learn, know, or understand something.",example:"A curious learner asks questions and explores new ideas."},
+ {word:"Versatile",phonetic:"/ˈvɜːrsətəl/",difficulty:"hard",definition:"Able to adapt to many different uses, activities, or situations.",example:"A versatile product can serve several user segments."},
+ {word:"Articulate",phonetic:"/ɑːrˈtɪkjələt/",difficulty:"hard",definition:"Able to express ideas clearly and effectively.",example:"A strong candidate can articulate the reasoning behind a product decision."}
+];
+
+const STORAGE_KEY="vocabvoice_progress_v2";
+let state = loadState();
+let currentIndex = 0;
+let activeFilter = "all";
+let practiceMode = "word";
+let recognition = null;
+let listening = false;
+
+function loadState(){
+ try{
+   const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));
+   return saved || {learned:[],attempts:0,correct:0,streak:0,lastPractice:""};
+ }catch(e){return {learned:[],attempts:0,correct:0,streak:0,lastPractice:""}}
+}
+function saveState(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}
+function today(){return new Date().toLocaleDateString("en-CA")}
+function currentWord(){return WORDS[currentIndex]}
+function filteredWords(){
+ if(activeFilter==="all") return WORDS;
+ if(activeFilter==="random") return WORDS;
+ return WORDS.filter(w=>w.difficulty===activeFilter);
+}
+function render(){
+ const w=currentWord();
+ document.getElementById("word").textContent=w.word;
+ document.getElementById("phonetic").textContent=w.phonetic;
+ document.getElementById("definition").textContent=w.definition;
+ document.getElementById("example").textContent="Example: "+w.example;
+ document.getElementById("difficultyBadge").textContent=w.difficulty[0].toUpperCase()+w.difficulty.slice(1);
+ const learned=state.learned.length;
+ document.getElementById("learnedStat").textContent=learned;
+ document.getElementById("accuracyStat").textContent=state.attempts?Math.round(state.correct/state.attempts*100)+"%":"0%";
+ document.getElementById("streakStat").textContent=state.streak+" 🔥";
+ document.getElementById("progressLabel").textContent=learned+" / "+WORDS.length+" learned";
+ document.getElementById("progressBar").style.width=(learned/WORDS.length*100)+"%";
+ document.getElementById("challengeText").textContent="Practice “"+w.word+"” using your voice.";
+}
+function speak(text){
+ if(!("speechSynthesis" in window)){showNotice("Text-to-speech is not supported in this browser.");return}
+ speechSynthesis.cancel();
+ const u=new SpeechSynthesisUtterance(text);
+ u.lang="en-US";u.rate=.9;u.pitch=1;
+ speechSynthesis.speak(u);
+}
+function showNotice(msg){
+ const el=document.getElementById("supportNotice");
+ el.textContent=msg;el.style.display="block";
+ setTimeout(()=>el.style.display="none",6000);
+}
+function openPractice(mode){
+ practiceMode=mode;
+ const w=currentWord();
+ document.getElementById("modalTitle").textContent=mode==="word"?"Pronunciation practice":"Sentence practice";
+ document.getElementById("modalInstruction").textContent=mode==="word"
+   ?"Say the vocabulary word clearly. The prototype checks whether speech recognition heard the target word."
+   :"Say a sentence containing the target vocabulary word.";
+ document.getElementById("sentencePrompt").textContent=mode==="word"
+   ?w.word
+   :"Try: “"+w.example+"”";
+ document.getElementById("resultBox").className="result";
+ document.getElementById("resultBox").textContent="";
+ document.getElementById("fallbackInput").value="";
+ document.getElementById("practiceModal").classList.add("show");
+}
+function closeModal(id){document.getElementById(id).classList.remove("show");stopRecognition()}
+function normalize(s){return s.toLowerCase().replace(/[^\w\s]/g," ").replace(/\s+/g," ").trim()}
+function evaluate(transcript){
+ const w=currentWord();
+ const text=normalize(transcript);
+ const target=normalize(w.word);
+ const ok=practiceMode==="word" ? text.split(" ").includes(target) : text.includes(target);
+ state.attempts++;
+ if(ok){
+   state.correct++;
+   if(!state.learned.includes(w.word)) state.learned.push(w.word);
+   if(state.lastPractice!==today()){
+     state.streak++;
+     state.lastPractice=today();
+   }
+ }
+ saveState();render();
+ const box=document.getElementById("resultBox");
+ box.className="result "+(ok?"good":"bad");
+ box.innerHTML=ok
+   ? "✓ Great! Speech recognition matched <strong>"+escapeHtml(w.word)+"</strong>."
+   : "Not quite. I heard: <strong>"+escapeHtml(transcript||"(nothing)")+"</strong>. Try again.";
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+
+function setupRecognition(){
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){
+   document.getElementById("speakBtn").disabled=true;
+   showNotice("Voice recognition is not available here. Use Chrome or Edge, or use the typing fallback in the practice window.");
+   return null;
+ }
+ const r=new SR();
+ r.lang="en-US";r.interimResults=false;r.maxAlternatives=1;r.continuous=false;
+ r.onstart=()=>{listening=true;document.getElementById("speakBtn").textContent="🛑 Listening…"};
+ r.onresult=e=>evaluate(e.results[0][0].transcript);
+ r.onerror=e=>{
+   const messages={"not-allowed":"Microphone permission was denied. Allow microphone access and try again.","audio-capture":"No microphone was found.","no-speech":"I didn't hear anything. Try again."};
+   showNotice(messages[e.error]||"Voice recognition error. Please try again.");
+ };
+ r.onend=()=>{listening=false;document.getElementById("speakBtn").textContent="🎙 Start speaking"};
+ return r;
+}
+function startRecognition(){
+ if(listening){stopRecognition();return}
+ if(!recognition) recognition=setupRecognition();
+ if(!recognition)return;
+ try{recognition.start()}catch(e){}
+}
+function stopRecognition(){if(recognition&&listening){try{recognition.stop()}catch(e){} } listening=false;document.getElementById("speakBtn").textContent="🎙 Start speaking"}
+
+document.getElementById("listenBtn").onclick=()=>speak(currentWord().word);
+document.getElementById("modalListenBtn").onclick=()=>speak(practiceMode==="word"?currentWord().word:currentWord().example);
+document.getElementById("practiceWordBtn").onclick=()=>openPractice("word");
+document.getElementById("practiceSentenceBtn").onclick=()=>openPractice("sentence");
+document.getElementById("challengeBtn").onclick=()=>openPractice("word");
+document.getElementById("speakBtn").onclick=startRecognition;
+document.getElementById("checkTypedBtn").onclick=()=>evaluate(document.getElementById("fallbackInput").value);
+document.getElementById("progressBtn").onclick=()=>{
+ document.getElementById("progressDetails").innerHTML=
+ `<div class="grid" style="grid-template-columns:1fr 1fr">
+ <div class="card"><div class="muted">Learned</div><div class="stat">${state.learned.length}</div></div>
+ <div class="card"><div class="muted">Accuracy</div><div class="stat">${state.attempts?Math.round(state.correct/state.attempts*100):0}%</div></div>
+ </div><p class="muted" style="margin-top:18px">Learned words: ${state.learned.length?state.learned.join(", "):"None yet"}</p>`;
+ document.getElementById("progressModal").classList.add("show");
+};
+document.getElementById("settingsBtn").onclick=()=>document.getElementById("settingsModal").classList.add("show");
+document.getElementById("resetBtn").onclick=()=>{
+ if(confirm("Reset all VocabVoice progress?")){
+  state={learned:[],attempts:0,correct:0,streak:0,lastPractice:""};saveState();render();
+  document.getElementById("settingsModal").classList.remove("show");
+ }
+};
+document.getElementById("nextBtn").onclick=()=>{
+ const list=filteredWords();
+ if(activeFilter==="random") currentIndex=Math.floor(Math.random()*WORDS.length);
+ else{
+   const currentPos=Math.max(0,list.indexOf(currentWord()));
+   const next=list[(currentPos+1)%list.length];
+   currentIndex=WORDS.indexOf(next);
+ }
+ render();
+};
+document.querySelectorAll(".filter").forEach(btn=>btn.onclick=()=>{
+ document.querySelectorAll(".filter").forEach(b=>b.classList.remove("active"));
+ btn.classList.add("active");activeFilter=btn.dataset.filter;
+ if(activeFilter==="random") currentIndex=Math.floor(Math.random()*WORDS.length);
+ else{
+   const list=filteredWords();if(!list.includes(currentWord()))currentIndex=WORDS.indexOf(list[0]);
+ }
+ render();
+});
+document.querySelectorAll("[data-close]").forEach(btn=>btn.onclick=()=>closeModal(btn.dataset.close));
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)closeModal(m.id)}));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".modal.show").forEach(m=>closeModal(m.id))});
+
+render();
+setupRecognition();
+</script>
+</body>
+</html>
