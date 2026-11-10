@@ -4,6 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>VocabVoice — Voice Vocabulary Coach</title>
+
+<!-- Google Analytics 4 (GA4) with Anonymous User-Wise Tracking -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-WFJDVP37TP"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  // Anonymous Persistent User ID in LocalStorage
+  let gaUserId = localStorage.getItem("vocab_user_id");
+  if (!gaUserId) {
+    gaUserId = "usr_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now().toString(36);
+    localStorage.setItem("vocab_user_id", gaUserId);
+  }
+
+  gtag('config', 'G-XXXXXXXXXX', {
+    'user_id': gaUserId
+  });
+</script>
+
 <style>
 :root{
   --bg:#f6f7fb;--card:#fff;--text:#172033;--muted:#667085;--primary:#5b5bd6;
@@ -215,12 +235,18 @@ function logEvent(eventType, email="-", rating="-", feedback="-"){
   }).catch(err => console.log("Tracking error:", err));
 }
 
-// Log initial page view on landing
+// Log initial page view
 window.addEventListener("DOMContentLoaded", () => {
   logEvent("Page View");
+  if(typeof gtag === "function"){
+    gtag('event', 'page_view_custom', {
+      'user_id': gaUserId,
+      'traffic_source': getTrafficSource()
+    });
+  }
 });
 
-// Feedback Widget State
+// Feedback Widget State & Actions
 let selectedFeedbackRating = "-";
 
 function setRating(val){
@@ -245,7 +271,18 @@ function closeFeedbackWidget(){
 function submitFeedback(){
   const email = document.getElementById("feedbackEmail").value.trim() || "-";
   const notes = document.getElementById("feedbackNotes").value.trim() || "-";
+  
+  // Send to Google Sheets
   logEvent("User Feedback", email, selectedFeedbackRating, notes);
+
+  // Send to GA4
+  if(typeof gtag === "function"){
+    gtag('event', 'user_feedback', {
+      'user_id': gaUserId,
+      'rating': selectedFeedbackRating,
+      'has_email': email !== "-"
+    });
+  }
 
   const widget = document.getElementById("feedbackWidget");
   widget.innerHTML = `<div style="text-align:center;padding:12px 0;color:var(--success);font-weight:700">Thank you for testing! 🙌</div>`;
@@ -356,8 +393,20 @@ function evaluate(transcript){
    ? "✓ Great! Speech recognition matched <strong>"+escapeHtml(w.word)+"</strong>."
    : "Not quite. I heard: <strong>"+escapeHtml(transcript||"(nothing)")+"</strong>. Try again.";
 
- // Track user speaking practice attempt & trigger feedback prompt
+ // Track user speaking practice attempt in Google Sheet
  logEvent("Voice Practice Drill", "-", ok ? "Matched" : "Unmatched", "Word: " + w.word);
+
+ // Track user action in Google Analytics 4
+ if(typeof gtag === "function"){
+   gtag('event', 'voice_practice', {
+     'user_id': gaUserId,
+     'word': w.word,
+     'mode': practiceMode,
+     'status': ok ? 'matched' : 'unmatched'
+   });
+ }
+
+ // Trigger feedback prompt
  triggerFeedbackModal();
 }
 
