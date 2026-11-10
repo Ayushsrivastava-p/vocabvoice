@@ -53,6 +53,26 @@ h1{font-size:22px;margin:0}.tag{font-size:12px;color:var(--muted);margin-top:2px
 .input-row{display:flex;gap:8px}.input-row input{flex:1;border:1px solid var(--border);border-radius:12px;padding:12px 14px;outline:none}.input-row input:focus{border-color:var(--primary)}
 footer{text-align:center;color:var(--muted);font-size:12px;padding:24px}
 @media(max-width:800px){.grid{grid-template-columns:1fr}.word{font-size:42px}.topline{flex-direction:column}.challenge{align-items:flex-start;flex-direction:column}}
+
+/* Feedback Widget */
+.feedback-widget{
+  position:fixed;bottom:24px;right:24px;width:340px;max-width:calc(100vw - 32px);
+  background:#fff;border:1px solid var(--border);border-radius:18px;
+  box-shadow:0 15px 40px rgba(31,41,55,.16);padding:20px;z-index:100;
+  display:none;animation:slideUp .3s ease-out;
+}
+.feedback-widget.show{display:block}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.feedback-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.feedback-head h4{margin:0;font-size:15px;color:var(--text)}
+.rating-group{display:flex;gap:8px;margin-bottom:12px}
+.rating-btn{flex:1;border:1px solid var(--border);background:#f8f9fc;border-radius:10px;padding:8px;font-size:13px;font-weight:600;color:var(--text);transition:.2s}
+.rating-btn:hover{background:#eeeefe;border-color:var(--primary)}
+.rating-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.feedback-widget input{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:13px;outline:none}
+.feedback-widget input:focus{border-color:var(--primary)}
+.feedback-actions{display:flex;justify-content:flex-end;gap:8px}
+.feedback-actions button{padding:8px 14px;border-radius:10px;font-size:12px;font-weight:600}
 </style>
 </head>
 <body>
@@ -150,7 +170,89 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:24px}
   </div>
 </div>
 
+<!-- Bottom Corner Feedback & Lead Capture Widget -->
+<div class="feedback-widget" id="feedbackWidget">
+  <div class="feedback-head">
+    <h4>How was your voice drill?</h4>
+    <button class="close" onclick="closeFeedbackWidget()" style="width:28px;height:28px">×</button>
+  </div>
+  <div class="rating-group">
+    <button class="rating-btn" id="rateSmooth" onclick="setRating('Smooth')">👍 Smooth</button>
+    <button class="rating-btn" id="rateNeedsWork" onclick="setRating('Needs Work')">👎 Needs Work</button>
+  </div>
+  <input type="text" id="feedbackNotes" placeholder="Quick feedback or idea (optional)">
+  <input type="email" id="feedbackEmail" placeholder="Your email (for updates / optional)">
+  <div class="feedback-actions">
+    <button class="secondary" onclick="closeFeedbackWidget()">Skip</button>
+    <button class="primary" onclick="submitFeedback()">Submit</button>
+  </div>
+</div>
+
 <script>
+// --- ANALYTICS & GOOGLE SHEET CONFIGURATION ---
+const TRACKING_URL = "https://script.google.com/macros/s/AKfycbxb_pGNCJSBmARr5jgMGrsHdtzYyWqr_XzVMx_jlGAqLFD8nknI_UknXT7DgmI6LP-J/exec";
+
+function getTrafficSource(){
+  const urlParams = new URLSearchParams(window.location.search);
+  const utmSource = urlParams.get('source') || urlParams.get('utm_source');
+  if(utmSource) return utmSource;
+  if(document.referrer){
+    if(document.referrer.includes("linkedin")) return "LinkedIn";
+    if(document.referrer.includes("twitter") || document.referrer.includes("t.co")) return "Twitter/X";
+    return document.referrer;
+  }
+  return "Direct Visit";
+}
+
+function logEvent(eventType, email="-", rating="-", feedback="-"){
+  if(!TRACKING_URL || TRACKING_URL.includes("YOUR_APPS_SCRIPT")) return;
+  const source = getTrafficSource();
+  fetch(TRACKING_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ eventType, source, email, rating, feedback })
+  }).catch(err => console.log("Tracking error:", err));
+}
+
+// Log initial page view on landing
+window.addEventListener("DOMContentLoaded", () => {
+  logEvent("Page View");
+});
+
+// Feedback Widget State
+let selectedFeedbackRating = "-";
+
+function setRating(val){
+  selectedFeedbackRating = val;
+  document.getElementById("rateSmooth").classList.toggle("active", val === "Smooth");
+  document.getElementById("rateNeedsWork").classList.toggle("active", val === "Needs Work");
+}
+
+function triggerFeedbackModal(){
+  if(!sessionStorage.getItem("feedback_shown")){
+    setTimeout(() => {
+      document.getElementById("feedbackWidget").classList.add("show");
+      sessionStorage.setItem("feedback_shown", "true");
+    }, 1200);
+  }
+}
+
+function closeFeedbackWidget(){
+  document.getElementById("feedbackWidget").classList.remove("show");
+}
+
+function submitFeedback(){
+  const email = document.getElementById("feedbackEmail").value.trim() || "-";
+  const notes = document.getElementById("feedbackNotes").value.trim() || "-";
+  logEvent("User Feedback", email, selectedFeedbackRating, notes);
+
+  const widget = document.getElementById("feedbackWidget");
+  widget.innerHTML = `<div style="text-align:center;padding:12px 0;color:var(--success);font-weight:700">Thank you for testing! 🙌</div>`;
+  setTimeout(closeFeedbackWidget, 2000);
+}
+// ------------------------------------------------
+
 const WORDS = [
  {word:"Resilient",phonetic:"/rɪˈzɪliənt/",difficulty:"medium",definition:"Able to recover quickly from difficulties or setbacks.",example:"She stayed resilient after the project faced several unexpected problems."},
  {word:"Meticulous",phonetic:"/məˈtɪkjələs/",difficulty:"hard",definition:"Very careful and precise about every detail.",example:"He is meticulous when reviewing product requirements."},
@@ -232,6 +334,7 @@ function openPractice(mode){
 }
 function closeModal(id){document.getElementById(id).classList.remove("show");stopRecognition()}
 function normalize(s){return s.toLowerCase().replace(/[^\w\s]/g," ").replace(/\s+/g," ").trim()}
+
 function evaluate(transcript){
  const w=currentWord();
  const text=normalize(transcript);
@@ -252,7 +355,12 @@ function evaluate(transcript){
  box.innerHTML=ok
    ? "✓ Great! Speech recognition matched <strong>"+escapeHtml(w.word)+"</strong>."
    : "Not quite. I heard: <strong>"+escapeHtml(transcript||"(nothing)")+"</strong>. Try again.";
+
+ // Track user speaking practice attempt & trigger feedback prompt
+ logEvent("Voice Practice Drill", "-", ok ? "Matched" : "Unmatched", "Word: " + w.word);
+ triggerFeedbackModal();
 }
+
 function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 
 function setupRecognition(){
